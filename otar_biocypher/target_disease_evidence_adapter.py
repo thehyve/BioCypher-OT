@@ -145,6 +145,8 @@ class GeneOntologyNodeField(Enum):
     # optional fields
     GENE_ONTOLOGY_NAME = "name"
 
+    _LABEL = GENE_ONTOLOGY_NAME
+
 
 class MousePhenotypeNodeField(Enum):
     """
@@ -210,10 +212,32 @@ class TargetDiseaseEdgeField(Enum):
 
     TYPE = "datatypeId"
     _LABEL = TYPE
-
     SOURCE = "datasourceId"
     LITERATURE = "literature"
     SCORE = "score"
+
+
+class TargetGoEdgeField(Enum):
+    """
+    Enum of all the fields in the target-disease dataset. Used to generate the
+    bulk of relationships in the graph. Values are the spellings used in the
+    Open Targets parquet files.
+    """
+
+    # mandatory fields
+    # INTERACTION_ACCESSION = "id"
+
+    TARGET_GENE_ENSG = "id"
+    _PRIMARY_SOURCE_ID = TARGET_GENE_ENSG
+
+    GO_ACCESSION = "go.id"
+    _PRIMARY_TARGET_ID = GO_ACCESSION
+
+    TYPE = "go.aspect"
+    SOURCE = "go.source"
+    LITERATURE = "go.evidence"
+    GENEPRODUCT = "go.geneProduct"
+    ECOID = "go.ecoId"
 
 
 class TargetDiseaseEvidenceAdapter:
@@ -228,7 +252,7 @@ class TargetDiseaseEvidenceAdapter:
             | MouseTargetNodeField
             | MouseModelNodeField
         ],
-        edge_fields: list[TargetDiseaseEdgeField],
+        edge_fields: list[TargetDiseaseEdgeField | TargetGoEdgeField],
         test_mode: bool = False,
         test_mode_size = [200,200]
     ):
@@ -553,9 +577,10 @@ class TargetDiseaseEvidenceAdapter:
         logger.info("Generating batches.")
 
         self.batches = []
+        self.batches.append(self._yield_edge_batches(self.target_df, TargetGoEdgeField))
         self.batches.append(self._yield_edge_batches(self.evidence_df, TargetDiseaseEdgeField))
          
-        return self.batches
+        return
 
     def get_edges(self):
         """
@@ -615,12 +640,18 @@ class TargetDiseaseEvidenceAdapter:
                 elif row[field_column_name]:
                     properties[field_column_name] = row[field_column_name]
 
+
+            if edge_field_type == TargetGoEdgeField:
+                properties["licence"] = "<<TODO>>"
+            
             if edge_field_type == TargetDiseaseEdgeField:
                 properties["licence"] = _find_licence(row[edge_field_type.SOURCE.value])
 
 
-
-            label = row[edge_field_type._LABEL.value.replace(".", "_")]
+            if edge_field_type == TargetGoEdgeField:
+                label = "GeneToGoTermAssociation"
+            else:
+                label = row[edge_field_type._LABEL.value.replace(".", "_")]
 
             properties["version"] = "22.11"
 

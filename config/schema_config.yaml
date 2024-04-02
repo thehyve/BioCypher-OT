@@ -79,3 +79,14 @@ gene to disease association:
   properties:
     literature: str[]
     score: double
+
+gene to go term association:
+  represented_as: edge
+  preferred_id: go
+  label_in_input: GeneToGoTermAssociation
+  properties:
+    source: "str"
+    type: "str"
+    literature: "str"
+    geneProduct: "str"
+    ecoId: "str"

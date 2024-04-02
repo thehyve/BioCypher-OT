@@ -15,6 +15,8 @@ from otar_biocypher.target_disease_evidence_adapter import (
     GeneOntologyNodeField,
     MousePhenotypeNodeField,
     MouseTargetNodeField,
+    TargetGoEdgeField,
+
 )
 
 """
@@ -97,6 +99,13 @@ target_disease_edge_fields = [
     # optional fields
     TargetDiseaseEdgeField.SCORE,
     TargetDiseaseEdgeField.LITERATURE,
+    TargetGoEdgeField.TARGET_GENE_ENSG,
+    TargetGoEdgeField.GO_ACCESSION,
+    TargetGoEdgeField.TYPE,
+    TargetGoEdgeField.SOURCE,
+    TargetGoEdgeField.LITERATURE,
+    TargetGoEdgeField.GENEPRODUCT,
+    TargetGoEdgeField.ECOID,
 ]
 
 
