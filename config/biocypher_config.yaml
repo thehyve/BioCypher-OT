@@ -3,7 +3,7 @@ biocypher:
   schema_config_path: config/schema_config.yaml
 
 neo4j:
-  database_name: test
+  database_name: neo4j
   delimiter: '\t'
   array_delimiter: "|"
   skip_bad_relationships: true
