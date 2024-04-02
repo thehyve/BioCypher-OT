@@ -20,7 +20,21 @@ mouse gene:
     targetInModel: str
     targetInModelMgiId: str
     targetFromSourceId: str
+mouse phenotype:
+  is_a: phenotypic feature
+  represented_as: node
+  preferred_id: mp
+  label_in_input: mp
+  properties:
+    modelPhenotypeLabel: str
+    targetFromSourceId: str
+    targetInModelEnsemblId: str
 
+mouse model:
+  is_a: named thing
+  represented_as: node
+  preferred_id: mgi
+  label_in_input: mgi
 # otar has no Bioregistry entry
 disease:
   represented_as: node
@@ -105,3 +119,11 @@ gene to go term association:
     literature: "str"
     geneProduct: "str"
     ecoId: "str"
+
+mouse model to target:
+  is_a: association
+  represented_as: edge
+  # preferred_id: ensembl
+  label_in_input: MouseModelToTarget
+  properties:
+    source: str

@@ -177,8 +177,6 @@ class MouseTargetNodeField(Enum):
     MOUSE_TARGET_SYMBOL = "targetInModel"
     MOUSE_TARGET_MGI = "targetInModelMgiId"
 
-    # human target ensembl id
-    HUMAN_TARGET_ENGS = "targetFromSourceId"
 
 
 class MouseModelNodeField(Enum):
@@ -188,10 +186,22 @@ class MouseModelNodeField(Enum):
     """
 
     # mandatory fields
-    MOUSE_PHENOTYPE_MODELS = "biologicalModels"
+    MOUSE_PHENOTYPE_MODELS = "biologicalModels.id"
     _PRIMARY_ID = MOUSE_PHENOTYPE_MODELS
 
-    MOUSE_PHENOTYPE_CLASSES = "modelPhenotypeClasses"
+    MOUSE_PHENOTYPE_CLASSES_ID = "modelPhenotypeClasses.id"
+    MOUSE_PHENOTYPE_CLASSES_LABEL = "modelPhenotypeClasses.label"
+
+
+class MouseModelToTarget(Enum):
+    MOUSE_MODEL_ID = "biologicalModels.id"
+    _PRIMARY_SOURCE_ID = MOUSE_MODEL_ID
+
+    TARGET_HUMAN_GENE = "targetFromSourceId"
+    _PRIMARY_TARGET_ID = TARGET_HUMAN_GENE
+
+    SOURCE = "biologicalModels.literature"
+
 
 class DrugNodeField(Enum):
     """
@@ -546,18 +556,14 @@ class TargetDiseaseEvidenceAdapter:
         yield from self._yield_node_type(self.molecule_df, DrugNodeField, "chembl")
 
         # Mouse Phenotypes
-        only_mp_df = self.mp_df.select(
-            [field.value for field in MousePhenotypeNodeField]
-        ).dropDuplicates()
-        yield from self._yield_node_type(only_mp_df, MousePhenotypeNodeField)
+        yield from self._yield_node_type(self.mp_df, MousePhenotypeNodeField)
 
         # Mouse Targets
-        mouse_target_df = self.mp_df.select(
-            [field.value for field in MouseTargetNodeField]
-        ).dropDuplicates()
         yield from self._yield_node_type(
-            mouse_target_df, MouseTargetNodeField, "ensembl"
+            self.mp_df, MouseTargetNodeField, "ensembl"
         )
+        yield from self._yield_node_type(self.mp_df, MouseModelNodeField, "mgi")
+
     def _yield_edge_batches(self, df, edge_field_type):
 
         if self.test_mode:
@@ -615,6 +621,7 @@ class TargetDiseaseEvidenceAdapter:
         self.batches.append( self._yield_edge_batches(self.molecule_df, DrugGeneEdgeField))
         self.batches.append(self._yield_edge_batches(self.target_df, TargetGoEdgeField))
         self.batches.append(self._yield_edge_batches(self.evidence_df, TargetDiseaseEdgeField))
+        self.batches.append(self._yield_edge_batches(self.mp_df, MouseModelToTarget))
          
         return
 
@@ -684,7 +691,9 @@ class TargetDiseaseEvidenceAdapter:
 
             if edge_field_type == TargetGoEdgeField:
                 properties["licence"] = "<<TODO>>"
-            
+            if edge_field_type == MouseModelToTarget:
+                properties["licence"] = "<<TODO>>"
+                properties["source"] = "<<TODO>>"
             if edge_field_type == TargetDiseaseEdgeField:
                 properties["licence"] = _find_licence(row[edge_field_type.SOURCE.value])
 
@@ -693,6 +702,8 @@ class TargetDiseaseEvidenceAdapter:
                 label = "GeneToGoTermAssociation"
             elif edge_field_type == DrugGeneEdgeField:
                 label =  "DrugToGeneAssociation"
+            elif edge_field_type == MouseModelToTarget:
+                label = "MouseModelToTarget"
             else:
                 label = row[edge_field_type._LABEL.value.replace(".", "_")]
 
