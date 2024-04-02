@@ -193,6 +193,22 @@ class MouseModelNodeField(Enum):
 
     MOUSE_PHENOTYPE_CLASSES = "modelPhenotypeClasses"
 
+class DrugNodeField(Enum):
+    """
+    Enum of all the fields in the drug/molecule dataset.
+    Values are the spellings used in the Open Targets parquet files.
+    """
+
+    # mandatory fields
+    MOLECULE_ID = "id"
+    _PRIMARY_ID = MOLECULE_ID
+
+    DRUGTYPE = "drugType"
+    INCHIKEY = "inchikey"
+    NAME = "name"
+    ISAPPROVED = "isApproved"
+    DESCRIPTION = "description"
+
 
 class TargetDiseaseEdgeField(Enum):
     """
@@ -216,7 +232,14 @@ class TargetDiseaseEdgeField(Enum):
     LITERATURE = "literature"
     SCORE = "score"
 
+class DrugGeneEdgeField(Enum):
+    # INTERACTION_ACCESSION = "id"
+    DRUG_ID = "id"
+    _PRIMARY_SOURCE_ID = DRUG_ID
 
+    GENE_ID = "linkedTargets.rows"
+    _PRIMARY_TARGET_ID = GENE_ID
+    
 class TargetGoEdgeField(Enum):
     """
     Enum of all the fields in the target-disease dataset. Used to generate the
@@ -251,8 +274,9 @@ class TargetDiseaseEvidenceAdapter:
             | MousePhenotypeNodeField
             | MouseTargetNodeField
             | MouseModelNodeField
+            | DrugNodeField
         ],
-        edge_fields: list[TargetDiseaseEdgeField | TargetGoEdgeField],
+        edge_fields: list[TargetDiseaseEdgeField | TargetGoEdgeField | DrugGeneEdgeField],
         test_mode: bool = False,
         test_mode_size = [200,200]
     ):
@@ -261,7 +285,6 @@ class TargetDiseaseEvidenceAdapter:
         self.edge_fields = edge_fields
         self.test_mode = test_mode
         self.test_mode_size = test_mode_size
-
 
         if not self.datasets:
             raise ValueError("datasets must be provided")
@@ -357,7 +380,10 @@ class TargetDiseaseEvidenceAdapter:
         self.go_df = self.spark.read.parquet(go_path)
 
         mp_path = "data/ot_files/mousePhenotypes"
-        self.mp_df = self.spark.read.parquet(mp_path)
+        self.mp_df = self.spark.read.parquet(mp_path)        
+        
+        molecule_path = "data/ot_files/molecule"
+        self.molecule_df = self.spark.read.parquet(molecule_path)
 
         if stats:
             # print schema
@@ -366,6 +392,8 @@ class TargetDiseaseEvidenceAdapter:
             print(self.disease_df.printSchema())
             print(self.go_df.printSchema())
             print(self.mp_df.printSchema())
+            print(self.molecule_df.printSchema())
+
 
             # print number of rows
             print(
@@ -376,6 +404,9 @@ class TargetDiseaseEvidenceAdapter:
             print(f"Length of GO data: {self.go_df.count()} entries")
             print(
                 f"Length of Mouse Phenotype data: {self.mp_df.count()} entries"
+            )
+            print(
+                f"Length of Molecule data: {self.molecule_df.count()} entries"
             )
 
             # print number of rows per datasource
@@ -392,6 +423,7 @@ class TargetDiseaseEvidenceAdapter:
             self.disease_df.show(1, 50, True)
             self.go_df.show(1, 50, True)
             self.mp_df.show(1, 50, True)
+            self.molecule_df.show(1, 50, True)
 
     def _generate_evidence_id(self, df: DataFrame) -> DataFrame:
         """
@@ -510,6 +542,9 @@ class TargetDiseaseEvidenceAdapter:
         # Gene Ontology
         yield from self._yield_node_type(self.go_df, GeneOntologyNodeField)
 
+        # Drug types
+        yield from self._yield_node_type(self.molecule_df, DrugNodeField, "chembl")
+
         # Mouse Phenotypes
         only_mp_df = self.mp_df.select(
             [field.value for field in MousePhenotypeNodeField]
@@ -577,6 +612,7 @@ class TargetDiseaseEvidenceAdapter:
         logger.info("Generating batches.")
 
         self.batches = []
+        self.batches.append( self._yield_edge_batches(self.molecule_df, DrugGeneEdgeField))
         self.batches.append(self._yield_edge_batches(self.target_df, TargetGoEdgeField))
         self.batches.append(self._yield_edge_batches(self.evidence_df, TargetDiseaseEdgeField))
          
@@ -640,6 +676,11 @@ class TargetDiseaseEvidenceAdapter:
                 elif row[field_column_name]:
                     properties[field_column_name] = row[field_column_name]
 
+            # for the drug gene relation assume the source is OT
+            # TODO: should be fixed properly
+            if edge_field_type == DrugGeneEdgeField:
+                properties["source"] = "<<TODO>>"
+                properties["licence"] = "<<TODO>>"
 
             if edge_field_type == TargetGoEdgeField:
                 properties["licence"] = "<<TODO>>"
@@ -650,6 +691,8 @@ class TargetDiseaseEvidenceAdapter:
 
             if edge_field_type == TargetGoEdgeField:
                 label = "GeneToGoTermAssociation"
+            elif edge_field_type == DrugGeneEdgeField:
+                label =  "DrugToGeneAssociation"
             else:
                 label = row[edge_field_type._LABEL.value.replace(".", "_")]
 

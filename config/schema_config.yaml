@@ -39,6 +39,16 @@ go term:
   label_in_input: go
   properties:
     name: str
+drug:
+  preferred_id: chembl
+  label_in_input: chembl
+  represented_as: node
+  properties:
+    inchiKey: str
+    name: str
+    description: str
+    drugType: str
+    isApproved: bool
 
 mouse phenotype:
   is_a: phenotypic feature
@@ -79,6 +89,11 @@ gene to disease association:
   properties:
     literature: str[]
     score: double
+
+drug to gene association:
+  represented_as: edge
+  label_in_input: DrugToGeneAssociation
+  use_id: false
 
 gene to go term association:
   represented_as: edge

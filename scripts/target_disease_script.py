@@ -11,6 +11,8 @@ from otar_biocypher.target_disease_evidence_adapter import (
     TargetDiseaseDataset,
     TargetNodeField,
     DiseaseNodeField,
+    DrugNodeField,
+    DrugGeneEdgeField,
     TargetDiseaseEdgeField,
     GeneOntologyNodeField,
     MousePhenotypeNodeField,
@@ -72,6 +74,8 @@ target_disease_node_fields = [
     GeneOntologyNodeField.GENE_ONTOLOGY_ACCESSION,
     MousePhenotypeNodeField.MOUSE_PHENOTYPE_ACCESSION,
     MouseTargetNodeField.MOUSE_TARGET_ENSG,
+    DrugNodeField.MOLECULE_ID,
+
     # optional target (gene) fields
     TargetNodeField.TARGET_GENE_SYMBOL,
     TargetNodeField.TARGET_GENE_BIOTYPE,
@@ -87,6 +91,12 @@ target_disease_node_fields = [
     MouseTargetNodeField.MOUSE_TARGET_SYMBOL,
     MouseTargetNodeField.MOUSE_TARGET_MGI,
     # MouseTargetNodeField.HUMAN_TARGET_ENGS,
+
+    DrugNodeField.DRUGTYPE,
+    DrugNodeField.INCHIKEY,
+    DrugNodeField.NAME,
+    DrugNodeField.ISAPPROVED,
+    DrugNodeField.DESCRIPTION,
 ]
 
 target_disease_edge_fields = [
@@ -106,6 +116,9 @@ target_disease_edge_fields = [
     TargetGoEdgeField.LITERATURE,
     TargetGoEdgeField.GENEPRODUCT,
     TargetGoEdgeField.ECOID,
+    DrugGeneEdgeField.DRUG_ID,
+    DrugGeneEdgeField.GENE_ID,
+
 ]
 
 
