@@ -4,7 +4,7 @@ from biocypher import BioCypher
 # this works sometimes and not others. This is a workaround.
 import sys
 
-sys.path.append("")
+sys.path.insert(0, "")
 
 from otar_biocypher.target_disease_evidence_adapter import (
     TargetDiseaseEvidenceAdapter,
@@ -84,7 +84,7 @@ target_disease_node_fields = [
     # optional mouse target fields
     MouseTargetNodeField.MOUSE_TARGET_SYMBOL,
     MouseTargetNodeField.MOUSE_TARGET_MGI,
-    MouseTargetNodeField.HUMAN_TARGET_ENGS,
+    # MouseTargetNodeField.HUMAN_TARGET_ENGS,
 ]
 
 target_disease_edge_fields = [
@@ -121,7 +121,7 @@ def main():
         node_fields=target_disease_node_fields,
         edge_fields=target_disease_edge_fields,
         test_mode=True,
-        test_mode_size = [100000,20000]
+        test_mode_size = [1000,200]
     )
 
     target_disease_adapter.load_data(
@@ -134,9 +134,8 @@ def main():
     bc.write_nodes(target_disease_adapter.get_nodes())
 
     # Write OTAR edges in batches to avoid memory issues
-    batches = target_disease_adapter.get_edge_batches()
-    for batch in batches:
-        bc.write_edges(target_disease_adapter.get_edges(batch_number=batch))
+    target_disease_adapter.get_edge_batches()
+    bc.write_edges(target_disease_adapter.get_edges())
 
     # Post import functions
     bc.write_import_call()

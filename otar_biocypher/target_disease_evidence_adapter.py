@@ -209,6 +209,8 @@ class TargetDiseaseEdgeField(Enum):
     _PRIMARY_TARGET_ID = DISEASE_ACCESSION
 
     TYPE = "datatypeId"
+    _LABEL = TYPE
+
     SOURCE = "datasourceId"
     LITERATURE = "literature"
     SCORE = "score"
@@ -423,15 +425,17 @@ class TargetDiseaseEvidenceAdapter:
             ontology_class: Ontological class of the node (corresponding to the
             `label_in_input` field in the schema configuration).
         """
-
-        # Select columns of interest
-        df = df.select(
-            [
-                field.value
-                for field in self.node_fields
-                if isinstance(field, node_field_type)
-            ]  # type: ignore
-        )
+        df = df.select([
+            df[field.value].alias(field.value.replace(".", "_"))
+            for field in self.node_fields
+            if isinstance(field, node_field_type)
+        ])
+        
+        primary_id = node_field_type._PRIMARY_ID.value.replace(".", "_")
+        for typ in df.dtypes:
+            if typ[0] == primary_id:
+                if "array" in typ[1]:
+                    df = df.withColumn(primary_id, F.explode(primary_id))
 
         logger.info(f"Generating nodes of {node_field_type}.")
 
@@ -441,7 +445,7 @@ class TargetDiseaseEvidenceAdapter:
         for row in tqdm(df.collect()):
             # normalize id
             _id, _type = _process_id_and_type(
-                row[node_field_type._PRIMARY_ID.value], ontology_class
+                row[primary_id], ontology_class
             )
 
             # switch mouse gene type
@@ -457,11 +461,12 @@ class TargetDiseaseEvidenceAdapter:
             _props["licence"] = "https://platform-docs.opentargets.org/licence"
 
             for field in self.node_fields:
+                field_value = field.value.replace(".", "_")
                 if not isinstance(field, node_field_type):
                     continue
 
-                if row[field.value]:
-                    _props[field.value] = row[field.value]
+                if row[field_value]:
+                    _props[field_value] = row[field_value]
 
             yield (_id, _type, _props)
 
@@ -494,6 +499,50 @@ class TargetDiseaseEvidenceAdapter:
         yield from self._yield_node_type(
             mouse_target_df, MouseTargetNodeField, "ensembl"
         )
+    def _yield_edge_batches(self, df, edge_field_type):
+
+        if self.test_mode:
+            df = df.limit(self.test_mode_size[1])
+
+        # need to rename the columns because "nested.column.id"  would result in "id" and can be conflicting when flattening the df.
+        # "nested.column.id" will be renamed to "nested_column_id" to avoid conflicts.
+        df = df.select(
+        [
+            df[field.value].alias(field.value.replace(".", "_"))
+            for field in self.edge_fields
+            if isinstance(field, edge_field_type)
+        ]  # type: ignore
+    )
+        
+        primary_target_id = edge_field_type._PRIMARY_TARGET_ID.value.replace(".", "_")
+        for typ in df.dtypes:
+            if typ[0] == primary_target_id:
+                if "array" in typ[1]:
+                    df = df.withColumn(primary_target_id, F.explode(primary_target_id))
+        
+        primary_source_id = edge_field_type._PRIMARY_SOURCE_ID.value.replace(".", "_")
+        for typ in df.dtypes:
+            if typ[0] == primary_source_id:
+                if "array" in typ[1]:
+                    df = df.withColumn(primary_source_id, F.explode(primary_source_id))
+        
+
+        # add partition number to df as column
+        df = df.withColumn(
+            "partition_num", F.spark_partition_id()
+        )
+        df.persist()
+
+        batches =[
+            int(row.partition_num)
+            for row in df.select("partition_num")
+            .distinct()
+            .collect()
+        ]
+        
+        logger.info(f"Generated {len(batches)} batches for {edge_field_type}")
+
+        return df, batches, edge_field_type
 
     def get_edge_batches(self):
         """
@@ -503,55 +552,36 @@ class TargetDiseaseEvidenceAdapter:
 
         logger.info("Generating batches.")
 
-        # select columns of interest
-        self.evidence_df = self.evidence_df.where(
-            self.evidence_df.datasourceId.isin(
-                [field.value for field in self.datasets]
-            )
-        ).select([field.value for field in self.edge_fields])
-
-        # add partition number to self.evidence_df as column
-        self.evidence_df = self.evidence_df.withColumn(
-            "partition_num", F.spark_partition_id()
-        )
-        self.evidence_df.persist()
-
-        self.batches = [
-            int(row.partition_num)
-            for row in self.evidence_df.select("partition_num")
-            .distinct()
-            .collect()
-        ]
-
-        logger.info(f"Generated {len(self.batches)} batches.")
-
+        self.batches = []
+        self.batches.append(self._yield_edge_batches(self.evidence_df, TargetDiseaseEdgeField))
+         
         return self.batches
 
-    def get_edges(self, batch_number: int):
+    def get_edges(self):
         """
         Yield edges from the evidence dataframe per batch.
         """
+        for df,batch, edge_field_type in self.batches:
+            # Check if self.evidence_df has column partition_num
+            if "partition_num" not in df.columns:
+                raise ValueError(
+                    "df does not have column partition_num. "
+                    "Please run get_edge_batches() first."
+                )
+            for batch_number in batch:
+                logger.info("Generating edges.")
 
-        # Check if self.evidence_df has column partition_num
-        if "partition_num" not in self.evidence_df.columns:
-            raise ValueError(
-                "self.evidence_df does not have column partition_num. "
-                "Please run get_edge_batches() first."
-            )
+                logger.info(
+                    f"Processing batch {batch_number+1} of {len(batch)}."
+                )
 
-        logger.info("Generating edges.")
+                yield from self._process_edges(
+                    df.where(
+                        df.partition_num == batch_number
+                    ), edge_field_type
+                )
 
-        logger.info(
-            f"Processing batch {batch_number+1} of {len(self.batches)}."
-        )
-
-        yield from self._process_edges(
-            self.evidence_df.where(
-                self.evidence_df.partition_num == batch_number
-            )
-        )
-
-    def _process_edges(self, batch):
+    def _process_edges(self, batch, edge_field_type):
         """
         Process one batch of edges.
 
@@ -562,37 +592,55 @@ class TargetDiseaseEvidenceAdapter:
 
         logger.info(f"Batch size: {batch.count()} edges.")
 
-
         # yield edges per row of edge_df, skipping null values
         for row in tqdm(batch.collect()):
             # collect properties from fields, skipping null values
             properties = {}
             for field in self.edge_fields:
-                # skip disease and target ids, relationship id, and datatype id
-                # as they are encoded in the relationship
-                if field not in [
-                    TargetDiseaseEdgeField.LITERATURE,
-                    TargetDiseaseEdgeField.SCORE,
-                    TargetDiseaseEdgeField.SOURCE,
-                ]:
+                if field not in edge_field_type:
                     continue
 
-                if field == TargetDiseaseEdgeField.SOURCE:
-                    properties["source"] = row[field.value]
-                    properties["licence"] = _find_licence(row[field.value])
-                elif row[field.value]:
-                    properties[field.value] = row[field.value]
+                field_column_name = field.value.replace(".", "_")
+
+                # skip disease and target ids, relationship id, and datatype id
+                # as they are encoded in the relationship
+                if field.name in ["_PRIMARY_SOURCE_ID", "_PRIMARY_TARGET_ID", "INTERACTION_ACCESSION"]:
+                    continue
+                
+
+                if field.name == "SOURCE":
+                    properties["source"] = row[field_column_name]
+                elif field.name in ["LICENCE", "LICENSE"]:
+                    properties["licence"] = _find_licence(row[field_column_name])
+                elif row[field_column_name]:
+                    properties[field_column_name] = row[field_column_name]
+
+            if edge_field_type == TargetDiseaseEdgeField:
+                properties["licence"] = _find_licence(row[edge_field_type.SOURCE.value])
+
+
+
+            label = row[edge_field_type._LABEL.value.replace(".", "_")]
 
             properties["version"] = "22.11"
 
-            disease_id, _ = _process_id_and_type(row.diseaseId)
-            gene_id, _ = _process_id_and_type(row.targetId, "ensembl")
+            source = row[edge_field_type._PRIMARY_SOURCE_ID.value.replace(".", "_")]
+            source_id, _ = _process_id_and_type(source)
 
+            target = row[edge_field_type._PRIMARY_TARGET_ID.value.replace(".", "_")]
+            target_id, _ = _process_id_and_type(target)
+
+
+            try:
+                id = row[edge_field_type.INTERACTION_ACCESSION.value.replace(".", "_")]
+            except AttributeError:
+                id = str(source_id) +"_"+ str(target_id)
+            
             yield (
-                row.id,
-                gene_id,
-                disease_id,
-                row.datatypeId,
+                id,
+                source_id,
+                target_id,
+                label,
                 properties,
             )
 
@@ -633,6 +681,14 @@ def _process_id_and_type(inputId: str, _type: Optional[str] = None):
     elif ":" in inputId:
         _type = inputId.split(":")[0].lower()
         _id = normalize_curie(inputId, sep=":")
+
+    if inputId.lower().startswith("chembl"):
+        _type = "CHEMBL"
+        _id = normalize_curie("CHEMBL:" + inputId.upper())
+    
+    if any(inputId.startswith(prefix) for prefix in ["ENSG", "ENST","ENSEMBL"]):
+        _type = "ENSEMBL"
+        _id = normalize_curie("ENSEMBL:" + inputId.upper())
 
     if not _id:
         return (None, None)
