@@ -228,11 +228,14 @@ class TargetDiseaseEvidenceAdapter:
         ],
         edge_fields: list[TargetDiseaseEdgeField],
         test_mode: bool = False,
+        test_mode_size = [200,200]
     ):
         self.datasets = datasets
         self.node_fields = node_fields
         self.edge_fields = edge_fields
         self.test_mode = test_mode
+        self.test_mode_size = test_mode_size
+
 
         if not self.datasets:
             raise ValueError("datasets must be provided")
@@ -433,7 +436,7 @@ class TargetDiseaseEvidenceAdapter:
         logger.info(f"Generating nodes of {node_field_type}.")
 
         if self.test_mode:
-            df = df.limit(100)
+            df = df.limit(self.test_mode_size[0])
 
         for row in tqdm(df.collect()):
             # normalize id
@@ -559,9 +562,6 @@ class TargetDiseaseEvidenceAdapter:
 
         logger.info(f"Batch size: {batch.count()} edges.")
 
-        if self.test_mode:
-            # limit batch df to 100 rows
-            batch = batch.limit(100)
 
         # yield edges per row of edge_df, skipping null values
         for row in tqdm(batch.collect()):

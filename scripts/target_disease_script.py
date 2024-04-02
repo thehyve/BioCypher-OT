@@ -121,6 +121,7 @@ def main():
         node_fields=target_disease_node_fields,
         edge_fields=target_disease_edge_fields,
         test_mode=True,
+        test_mode_size = [100000,20000]
     )
 
     target_disease_adapter.load_data(
