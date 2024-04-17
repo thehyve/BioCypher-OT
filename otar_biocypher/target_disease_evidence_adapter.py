@@ -236,8 +236,8 @@ class TargetDiseaseEdgeField(Enum):
     DISEASE_ACCESSION = "diseaseId"
     _PRIMARY_TARGET_ID = DISEASE_ACCESSION
 
-    TYPE = "datatypeId"
-    _LABEL = TYPE
+    ASSOCIATION_TYPE = "datatypeId"
+    # _LABEL = TYPE
     SOURCE = "datasourceId"
     LITERATURE = "literature"
     SCORE = "score"
@@ -378,6 +378,7 @@ class TargetDiseaseEvidenceAdapter:
 
         # Read in evidence data and target / disease annotations
         evidence_path = "data/ot_files/evidence"
+        # evidence_path = "data/ot_files/evidence_subset"
         self.evidence_df = self.spark.read.parquet(evidence_path)
 
         target_path = "data/ot_files/targets"
@@ -532,8 +533,12 @@ class TargetDiseaseEvidenceAdapter:
                     continue
 
                 if row[field_value]:
-                    _props[field_value] = row[field_value]
-
+                    val = row[field_value]
+                    if isinstance(val, str):
+                        _props[field_value] = val.replace(r'"', r"'")
+                    else:
+                        _props[field_value] = val
+                                        
             yield (_id, _type, _props)
 
     def get_nodes(self):
@@ -675,7 +680,6 @@ class TargetDiseaseEvidenceAdapter:
                 if field.name in ["_PRIMARY_SOURCE_ID", "_PRIMARY_TARGET_ID", "INTERACTION_ACCESSION"]:
                     continue
                 
-
                 if field.name == "SOURCE":
                     properties["source"] = row[field_column_name]
                 elif field.name in ["LICENCE", "LICENSE"]:
@@ -704,6 +708,8 @@ class TargetDiseaseEvidenceAdapter:
                 label =  "DrugToGeneAssociation"
             elif edge_field_type == MouseModelToTarget:
                 label = "MouseModelToTarget"
+            elif edge_field_type == TargetDiseaseEdgeField:
+                label = "GeneToDiseaseAssociation"
             else:
                 label = row[edge_field_type._LABEL.value.replace(".", "_")]
 
@@ -719,7 +725,7 @@ class TargetDiseaseEvidenceAdapter:
             try:
                 id = row[edge_field_type.INTERACTION_ACCESSION.value.replace(".", "_")]
             except AttributeError:
-                id = str(source_id) +"_"+ str(target_id)
+                id = None
             
             yield (
                 id,
