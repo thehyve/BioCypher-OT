@@ -5,6 +5,7 @@ from enum import Enum
 from bioregistry.resolve import normalize_curie
 from biocypher._logger import logger
 from tqdm import tqdm
+import hashlib
 import functools
 
 
@@ -725,7 +726,8 @@ class TargetDiseaseEvidenceAdapter:
             try:
                 id = row[edge_field_type.INTERACTION_ACCESSION.value.replace(".", "_")]
             except AttributeError:
-                id = None
+                # create has from the subject + object
+                id = hashlib.sha256((source_id + target_id).encode("utf-8")).hexdigest()
             
             yield (
                 id,
