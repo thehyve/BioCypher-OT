@@ -1,10 +1,11 @@
-from biocypher import BioCypher
 
 # VSCode does not add the root directory to the path (by default?). Not sure why
 # this works sometimes and not others. This is a workaround.
 import sys
 
+# sys.path.insert(0, "../og_biocypher/biocypher")
 sys.path.insert(0, "")
+from biocypher import BioCypher
 
 from otar_biocypher.target_disease_evidence_adapter import (
     TargetDiseaseEvidenceAdapter,
@@ -19,7 +20,7 @@ from otar_biocypher.target_disease_evidence_adapter import (
     MouseTargetNodeField,
     TargetGoEdgeField,
     MouseModelNodeField,
-
+    DrugDiseaseEdgeField,
     MouseModelToTarget
 )
 
@@ -110,7 +111,7 @@ target_disease_edge_fields = [
     TargetDiseaseEdgeField.INTERACTION_ACCESSION,
     TargetDiseaseEdgeField.TARGET_GENE_ENSG,
     TargetDiseaseEdgeField.DISEASE_ACCESSION,
-    TargetDiseaseEdgeField.TYPE,
+    TargetDiseaseEdgeField.ASSOCIATION_TYPE,
     TargetDiseaseEdgeField.SOURCE,
     # optional fields
     TargetDiseaseEdgeField.SCORE,
@@ -124,7 +125,8 @@ target_disease_edge_fields = [
     TargetGoEdgeField.ECOID,
     DrugGeneEdgeField.DRUG_ID,
     DrugGeneEdgeField.GENE_ID,
-    
+    DrugDiseaseEdgeField.DRUG_ID,
+    DrugDiseaseEdgeField.DISEASE_ID,
     MouseModelToTarget.MOUSE_MODEL_ID,
     MouseModelToTarget.TARGET_HUMAN_GENE,
     MouseModelToTarget.SOURCE
@@ -152,7 +154,7 @@ def main():
         node_fields=target_disease_node_fields,
         edge_fields=target_disease_edge_fields,
         test_mode=True,
-        test_mode_size = [1000,200]
+        test_mode_size = [100000,30000]
     )
 
     target_disease_adapter.load_data(

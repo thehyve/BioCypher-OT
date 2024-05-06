@@ -80,26 +80,28 @@ mouse phenotype:
 
 gene to disease association:
   represented_as: edge
-  preferred_id:
-    [
-      affected pathway,
-      somatic mutation,
-      genetic association,
-      literature,
-      animal model,
-      known drug,
-      rna expression,
-    ]
-  label_in_input:
-    [
-      affected_pathway,
-      somatic_mutation,
-      genetic_association,
-      literature,
-      animal_model,
-      known_drug,
-      rna_expression,
-    ]
+  label_in_input: GeneToDiseaseAssociation
+
+  # preferred_id:
+  #   [
+  #     affected pathway,
+  #     somatic mutation,
+  #     genetic association,
+  #     literature,
+  #     animal model,
+  #     known drug,
+  #     rna expression,
+  #   ]
+  # label_in_input:
+  #   [
+  #     affected_pathway,
+  #     somatic_mutation,
+  #     genetic_association,
+  #     literature,
+  #     animal_model,
+  #     known_drug,
+  #     rna_expression,
+  #   ]
   properties:
     literature: str[]
     score: double
@@ -108,6 +110,11 @@ drug to gene association:
   represented_as: edge
   label_in_input: DrugToGeneAssociation
   use_id: false
+
+drug to disease association:
+  is_a: association
+  represented_as: edge
+  label_in_input: DrugToDiseaseAssociation
 
 gene to go term association:
   represented_as: edge
@@ -127,3 +134,4 @@ mouse model to target:
   label_in_input: MouseModelToTarget
   properties:
     source: str
+  

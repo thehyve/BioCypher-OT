@@ -38,7 +38,6 @@ class TargetDiseaseDataset(Enum):
     UNIPROT_VARIANTS = "uniprot_variants"
     UNIPROT_LITERATURE = "uniprot_literature"
 
-
 _licences = {
     "cancer_biomarkers": "NA",  # TODO
     "cancer_gene_census": "Commercial use for Open Targets",
@@ -63,7 +62,6 @@ _licences = {
     "uniprot_variants": "CC BY 4.0",
     "uniprot_literature": "CC BY 4.0",
 }
-
 
 class TargetNodeField(Enum):
     """
@@ -104,7 +102,6 @@ class TargetNodeField(Enum):
     TARGET_SAFETY_LIABILITIES = "safetyLiabilities"
     TARGET_PATHWAYS = "pathways"
 
-
 class DiseaseNodeField(Enum):
     """
     Enum of all the fields in the disease dataset. Values are the spellings used
@@ -132,7 +129,6 @@ class DiseaseNodeField(Enum):
     DISEASE_INDIRECT_LOCATION_IDS = "indirectLocationIds"
     DISEASE_ONTOLOGY = "ontology"
 
-
 class GeneOntologyNodeField(Enum):
     """
     Enum of all the fields in the gene ontology dataset. Values are the
@@ -148,7 +144,6 @@ class GeneOntologyNodeField(Enum):
 
     _LABEL = GENE_ONTOLOGY_NAME
 
-
 class MousePhenotypeNodeField(Enum):
     """
     Enum of all the fields in the mouse phenotype dataset. Values are the
@@ -161,7 +156,6 @@ class MousePhenotypeNodeField(Enum):
 
     # optional fields
     MOUSE_PHENOTYPE_LABEL = "modelPhenotypeLabel"
-
 
 class MouseTargetNodeField(Enum):
     """
@@ -178,8 +172,6 @@ class MouseTargetNodeField(Enum):
     MOUSE_TARGET_SYMBOL = "targetInModel"
     MOUSE_TARGET_MGI = "targetInModelMgiId"
 
-
-
 class MouseModelNodeField(Enum):
     """
     Enum of all the fields in the mouse phenotype dataset related to the mouse
@@ -193,7 +185,6 @@ class MouseModelNodeField(Enum):
     MOUSE_PHENOTYPE_CLASSES_ID = "modelPhenotypeClasses.id"
     MOUSE_PHENOTYPE_CLASSES_LABEL = "modelPhenotypeClasses.label"
 
-
 class MouseModelToTarget(Enum):
     MOUSE_MODEL_ID = "biologicalModels.id"
     _PRIMARY_SOURCE_ID = MOUSE_MODEL_ID
@@ -202,7 +193,6 @@ class MouseModelToTarget(Enum):
     _PRIMARY_TARGET_ID = TARGET_HUMAN_GENE
 
     SOURCE = "biologicalModels.literature"
-
 
 class DrugNodeField(Enum):
     """
@@ -219,7 +209,6 @@ class DrugNodeField(Enum):
     NAME = "name"
     ISAPPROVED = "isApproved"
     DESCRIPTION = "description"
-
 
 class TargetDiseaseEdgeField(Enum):
     """
@@ -250,7 +239,14 @@ class DrugGeneEdgeField(Enum):
 
     GENE_ID = "linkedTargets.rows"
     _PRIMARY_TARGET_ID = GENE_ID
-    
+
+class DrugDiseaseEdgeField(Enum):
+    DRUG_ID = "id"
+    _PRIMARY_SOURCE_ID = DRUG_ID
+
+    DISEASE_ID = "linkedDiseases.rows"
+    _PRIMARY_TARGET_ID = DISEASE_ID
+
 class TargetGoEdgeField(Enum):
     """
     Enum of all the fields in the target-disease dataset. Used to generate the
@@ -624,11 +620,11 @@ class TargetDiseaseEvidenceAdapter:
         logger.info("Generating batches.")
 
         self.batches = []
+        self.batches.append(self._yield_edge_batches(self.molecule_df, DrugDiseaseEdgeField)) 
         self.batches.append( self._yield_edge_batches(self.molecule_df, DrugGeneEdgeField))
         self.batches.append(self._yield_edge_batches(self.target_df, TargetGoEdgeField))
         self.batches.append(self._yield_edge_batches(self.evidence_df, TargetDiseaseEdgeField))
         self.batches.append(self._yield_edge_batches(self.mp_df, MouseModelToTarget))
-         
         return
 
     def get_edges(self):
@@ -693,7 +689,9 @@ class TargetDiseaseEvidenceAdapter:
             if edge_field_type == DrugGeneEdgeField:
                 properties["source"] = "<<TODO>>"
                 properties["licence"] = "<<TODO>>"
-
+            if edge_field_type == DrugDiseaseEdgeField:
+                properties["licence"] = "<<TODO>>"
+                properties["source"] = "<<TODO>>"
             if edge_field_type == TargetGoEdgeField:
                 properties["licence"] = "<<TODO>>"
             if edge_field_type == MouseModelToTarget:
@@ -711,6 +709,8 @@ class TargetDiseaseEvidenceAdapter:
                 label = "MouseModelToTarget"
             elif edge_field_type == TargetDiseaseEdgeField:
                 label = "GeneToDiseaseAssociation"
+            elif edge_field_type == DrugDiseaseEdgeField:
+                label = "DrugToDiseaseAssociation"
             else:
                 label = row[edge_field_type._LABEL.value.replace(".", "_")]
 
@@ -727,8 +727,10 @@ class TargetDiseaseEvidenceAdapter:
                 id = row[edge_field_type.INTERACTION_ACCESSION.value.replace(".", "_")]
             except AttributeError:
                 # create has from the subject + object
-                id = hashlib.sha256((source_id + target_id).encode("utf-8")).hexdigest()
-            
+                if source_id and target_id:
+                    id = hashlib.sha256((source_id + target_id).encode("utf-8")).hexdigest()
+                else:
+                    continue
             yield (
                 id,
                 source_id,
