@@ -110,6 +110,20 @@ directory-of-your-choice/
 ```
 
 ## Usage
+### Docker
+To run the adapter using Docker, follow these steps:
+
+1. Ensure you have Docker installed and running.
+
+2. Follow the [Data Preparation](#data-preparation) steps to download the required datasets and place them in the `data/ot_files` directory. You don't have to download and install poetry as mentioned in the [Installation](#installation) steps.
+
+3. run the following command to start the BioCypher Open Targets adapter:
+   ```bash
+   docker-compose up -d
+   ```
+4. The adapter will start building the knowledge graph using the predefined node and edge definitions. Once everything is ready, you can access the Neo4j graph at `http://localhost:7474`. The database is running at `localhost:7687`.
+
+
 ### Quick Start
 1. Follow the [Installation](#installation) steps
 
