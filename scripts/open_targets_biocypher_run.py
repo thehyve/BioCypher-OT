@@ -11,8 +11,6 @@ from open_targets.definition import (
     node_diseases,
     node_gene_ontology,
     node_molecule,
-    node_mouse_phenotype,
-    node_mouse_target,
     node_targets,
 )
 
@@ -32,8 +30,6 @@ def main():
         node_diseases,
         node_molecule,
         node_gene_ontology,
-        node_mouse_phenotype,
-        node_mouse_target,
     ]
     edge_definitions = [edge_target_disease, edge_target_go]
 
