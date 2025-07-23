@@ -49,6 +49,7 @@ def main():
 
     # Post import functions
     bc.write_import_call()
+    bc.write_schema_info(as_node=True)
     bc.summary()
 
 
