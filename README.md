@@ -110,21 +110,23 @@ directory-of-your-choice/
 ```
 
 ## Usage
-### Docker
+### Docker - fully automated
 To run the adapter using Docker, follow these steps:
 
 1. Ensure you have Docker installed and running.
 
 2. Follow the [Data Preparation](#data-preparation) steps to download the required datasets and place them in the `data/ot_files` directory. You don't have to download and install poetry as mentioned in the [Installation](#installation) steps.
 
-3. run the following command to start the BioCypher Open Targets adapter:
+3. Create a folder in the root directory called `dump` where a dump of the database will be stored. This makes it easier to copy the database to other machines.
+
+4. run the following command to start the BioCypher Open Targets adapter:
    ```bash
    docker-compose up -d
    ```
-4. The adapter will start building the knowledge graph using the predefined node and edge definitions. Once everything is ready, you can access the Neo4j graph at `http://localhost:7474`. The database is running at `localhost:7687`.
+5. The adapter will start building the knowledge graph using the predefined node and edge definitions. Once everything is ready, you can access the Neo4j graph at `http://localhost:7474`. The database is running at `localhost:7687`.
 
 
-### Quick Start
+### Local & Docker - semi-automated
 1. Follow the [Installation](#installation) steps
 
 2. Follow the [Data Preparation](#data-preparation) steps and place the downloaded Parquet files in the `data/ot_files` directory
@@ -135,6 +137,24 @@ To run the adapter using Docker, follow these steps:
     ```
     The script runs BioCypher and generates a knowledge graph using all our node/edge definition presets.
 
+4. In order to load your run into a database to see your graph, you have to update the `import` container in the `docker-compose.yaml` file.  Mount the absolute path to the `biocypher-out` directory where the output files are stored. and execute the import script.
+    ```bash
+    import:
+        image: neo4j:4.4-enterprise
+        container_name: import
+        environment:
+            NEO4J_AUTH: none
+            NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+            FILL_DB_ON_STARTUP: "yes"
+        volumes:
+            - biocypher_neo4j_volume:/data
+            - ./scripts:/scripts
+            - ./biocypher-out:/absolute/path/to/repo/BioCypher-OT/biocypher-out # add this line
+        command:
+            - /bin/bash
+            # - /scripts/import.sh # remove this line
+            - /absolute/path/to/repo/BioCypher-OT/biocypher-out/[RUN]/neo4j-admin-import-call.sh # add this line
+      ```
 ### Not So Quick Start
 
 Basically the [Quick Start](#quick-start) but with your own set of node/edge
