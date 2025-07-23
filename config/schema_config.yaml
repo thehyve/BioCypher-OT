@@ -39,6 +39,9 @@ drug:
   properties:
     name: str
     description: str
+    isApproved: bool
+    drugType: str
+    blackBoxWarning: str
 
 go term:
   is_a: biological entity # activity, process, or location
