@@ -4,6 +4,10 @@
 
 from biocypher import BioCypher
 
+import sys
+sys.path.append(".")
+
+
 from open_targets.adapter.context import AcquisitionContext
 from open_targets.definition import (
     edge_drug_disease,
