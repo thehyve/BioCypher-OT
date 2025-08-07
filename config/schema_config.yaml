@@ -29,7 +29,6 @@ disease:
     code: str
     name: str
     description: str
-    ontology: str
 
 drug:
   represented_as: node
