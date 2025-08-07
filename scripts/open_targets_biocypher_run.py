@@ -12,6 +12,8 @@ from open_targets.adapter.context import AcquisitionContext
 from open_targets.definition import (
     edge_target_disease,
     edge_target_go,
+    edge_drug_disease,
+    edge_drug_target,
     node_diseases,
     node_gene_ontology,
     node_molecule,
@@ -35,7 +37,11 @@ def main():
         node_molecule,
         node_gene_ontology,
     ]
-    edge_definitions = [edge_target_disease, edge_target_go]
+    edge_definitions = [
+        edge_target_disease, 
+        edge_target_go, 
+        edge_drug_disease, 
+        edge_drug_target]
 
     # Open Targets
     context = AcquisitionContext(
