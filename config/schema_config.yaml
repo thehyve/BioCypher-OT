@@ -11,20 +11,19 @@ human gene:
     approvedName: str
     biotype: str
 
-mouse gene:
-  is_a: gene
+gene:
+  is_a: biological entity
   represented_as: node
   preferred_id: ensembl
-  input_label: mouse gene
+  input_label: ensembl
   properties:
-    targetInModel: str
-    targetInModelMgiId: str
-    targetFromSourceId: str
+    approvedSymbol: str
+    approvedName: str
+    biotype: str
 
 # otar has no Bioregistry entry
 disease:
   represented_as: node
-  preferred_id: [mondo, efo, hp, orphanet, otar, oba, ncit, doid, obi, ogms]
   input_label: [mondo, efo, hp, orphanet, otar, oba, ncit, doid, obi, ogms]
   properties:
     code: str
@@ -51,32 +50,12 @@ go term:
   properties:
     name: str
 
-mouse phenotype:
-  is_a: phenotypic feature
-  represented_as: node
-  preferred_id: mp
-  input_label: mp
-  properties:
-    modelPhenotypeLabel: str
-    targetFromSourceId: str
-    targetInModelEnsemblId: str
-
 # ---
 # Associations
 # ---
 
 gene to disease association:
   represented_as: edge
-  preferred_id:
-    [
-      affected pathway,
-      somatic mutation,
-      genetic association,
-      literature,
-      animal model,
-      known drug,
-      rna expression,
-    ]
   input_label:
     [
       affected_pathway,
@@ -90,6 +69,9 @@ gene to disease association:
   properties:
     literature: str[]
     score: double
+    datatypeId: str
+  source: gene
+  target: disease
 
 gene to go term association:
   is_a: association
