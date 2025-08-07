@@ -39,6 +39,7 @@ edge_target_disease: Final[AcquisitionDefinition[EdgeInfo]] = ExpressionEdgeAcqu
         FieldEvidenceDatasourceId,
         FieldEvidenceLiterature,
         FieldEvidenceScore,
+        FieldEvidenceDatatypeId,
         ("source", FieldEvidenceDatasourceId),
         ("licence", DataSourceToLicenceExpression(ToStringExpression(FieldExpression(FieldEvidenceDatasourceId)))),
     ],
