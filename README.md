@@ -109,9 +109,9 @@ directory-of-your-choice/
 ...
 ```
 
-Use the `download.sh` script to download the datasets. First check the version of the Open Targets data you want to download, then, in `data/ot_files/` execute the following command:
+Use the `download.sh` script to download the datasets. First check the version of the Open Targets data you want to download. Then, go to the folder `data/ot_files/` and execute the following command:
 ```bash
-bash download.sh
+bash ../../scripts/download.sh
 ```
 
 ## Usage
