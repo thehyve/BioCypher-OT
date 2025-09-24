@@ -1,4 +1,4 @@
-VERSION=25.06
+VERSION=25.09
 
 wget -N --recursive --no-parent --no-host-directories --cut-dirs 6 ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/$VERSION/output/target
 wget -N --recursive --no-parent --no-host-directories --cut-dirs 6 ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/$VERSION/output/disease
