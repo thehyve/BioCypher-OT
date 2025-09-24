@@ -111,9 +111,9 @@ directory-of-your-choice/
 ...
 ```
 
-Use the `download.sh` script to download the datasets. First check the version of the Open Targets data you want to download. Then, go to the folder `data/ot_files/` and execute the following command:
+Use the `download.sh` script to download the datasets. First check the version of the Open Targets data you want to download. Then, go to the folder where you want the data to be downloaded to and execute the following command:
 ```bash
-bash ../../scripts/download.sh
+{PATH_TO_REPO}/scripts/download.sh
 ```
 
 ## Usage
@@ -122,10 +122,14 @@ To run the adapter using Docker, follow these steps:
 
 1. Ensure you have Docker installed and running.
 
-2. Follow the [Data Preparation](#data-preparation) steps to download the required datasets and place them in the `data/ot_files` directory. You don't have to download and install poetry as mentioned in the [Installation](#installation) steps.
+2. Follow the [Data Preparation](#data-preparation) steps to download the required datasets and place them in the `{PATH_TO_REPO}/data/ot_files` directory. You don't have to download and install poetry as mentioned in the [Installation](#installation) steps.
 
-3. Create a folder in the root directory called `dump` where a dump of the database will be stored. This makes it easier to copy the database to other machines.
-
+3. Create a folder in the root directory of this repo called `dump` where a dump of the database will be stored. This makes it easier to copy the database to other machines. Make sure to grant everybody read/write permissions to this `dump` directory.
+    ```bash
+    mkdir -p dump
+    chmod 777 dump
+    ```
+    **NOTE:** When moving the dump file, make sure not to change file permissions and ownership. Owner should be `7474:7474` and permissions should be `-rw-r--r--`.
 4. run the following command to start the BioCypher Open Targets adapter:
    ```bash
    docker-compose up -d
@@ -136,7 +140,7 @@ To run the adapter using Docker, follow these steps:
 ### Local & Docker - semi-automated
 1. Follow the [Installation](#installation) steps
 
-2. Follow the [Data Preparation](#data-preparation) steps and place the downloaded Parquet files in the `data/ot_files` directory
+2. Follow the [Data Preparation](#data-preparation) steps and place the downloaded Parquet files in the `{PATH_TO_REPO}/data/ot_files` directory
 
 3. Run the script:
     ```bash
