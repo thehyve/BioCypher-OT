@@ -43,7 +43,7 @@ def main():
     context = AcquisitionContext(
         node_definitions=node_definitions,
         edge_definitions=edge_definitions,
-        datasets_location="data/ot_files",
+        datasets_location="/data/ot_files",
     )
 
     for node_definition in node_definitions:
